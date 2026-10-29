@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ziki – Create agent assembly preview</title>
+<style>
+:root{--bg:#f3f5fb;--panel:#fff;--card:#f1f4fb;--line:#e1e6f3;--blue:#3b6cf0;--ink:#0d1330;--mute:#5b6690;--ok:#2f9e63;--face:#0b1430;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#070d24;--panel:#0f1b38;--card:#13234a;--line:#22345f;--ink:#e8edff;--mute:#8c9bc4}}
+:root[data-theme="dark"]{--bg:#070d24;--panel:#0f1b38;--card:#13234a;--line:#22345f;--ink:#e8edff;--mute:#8c9bc4}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 "Helvetica Neue",Arial,sans-serif}
+button,input{font:inherit;color:inherit}button{cursor:pointer}
+main{max-width:960px;margin:0 auto;padding:20px 20px 80px}
+header{display:flex;align-items:center;gap:12px;margin-bottom:34px}
+.logo{font-weight:800;font-size:22px}.sp{flex:1}
+.chip{border:1px solid var(--line);background:var(--panel);border-radius:99px;padding:6px 14px;font-size:14px}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap;margin-bottom:22px}
+h1{font-size:38px;letter-spacing:-.03em;margin:0}.sub{color:var(--mute);margin:4px 0 0;max-width:46ch}
+/* Create agent button */
+.create{position:relative;overflow:hidden;display:inline-flex;align-items:center;gap:10px;border:0;background:var(--blue);color:#fff;font-weight:700;border-radius:99px;padding:14px 26px;box-shadow:0 8px 22px rgba(59,108,240,.35);transition:transform .15s}
+.create:hover{transform:translateY(-2px)}.create:active{transform:scale(.95,.9)}
+.create:disabled{background:var(--mute);box-shadow:none;cursor:not-allowed;transform:none}
+.create svg{width:20px;height:20px;animation:spin 6s linear infinite}.create:hover svg{animation-duration:1s}.create:disabled svg{animation:none}
+.create:after{content:"";position:absolute;top:0;left:-60%;width:40%;height:100%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.45),transparent);transform:skewX(-20deg);animation:shine 4.5s ease-in-out infinite}
+.create:disabled:after{display:none}
+@keyframes shine{0%,70%{left:-60%}100%{left:130%}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.meter{background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:18px 20px;max-width:420px;margin-bottom:24px}
+.meter small{letter-spacing:.08em;font-weight:700;color:var(--mute)}.meter b{font-size:34px}
+.bar{height:10px;border-radius:9px;background:var(--card);margin-top:10px;overflow:hidden}.bar i{display:block;height:100%;background:var(--blue);border-radius:9px;transition:width .8s cubic-bezier(.2,.8,.2,1)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
+.ag{background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:16px;display:flex;gap:14px;align-items:center}
+.ag.new{animation:pop .6s cubic-bezier(.3,.9,.3,1.3)}@keyframes pop{from{transform:scale(.7);opacity:0}}
+.ag .av{width:56px;flex:none}.ag h3{margin:0 0 4px}
+.role{font-size:12px;font-weight:700;color:var(--blue);background:rgba(59,108,240,.14);border-radius:99px;padding:2px 10px}
+.key{display:inline-flex;gap:8px;align-items:center;margin-top:8px;background:var(--card);border-radius:99px;padding:4px 4px 4px 12px;font:13px ui-monospace,Menlo,monospace}
+.key button{border:0;background:var(--blue);color:#fff;border-radius:99px;padding:5px 14px;font:700 13px sans-serif}
+/* modal */
+.ov{position:fixed;inset:0;background:rgba(5,10,30,.6);display:none;align-items:center;justify-content:center;padding:16px;z-index:20}
+.ov.on{display:flex}
+.dlg{background:var(--panel);border:1px solid var(--line);border-radius:28px;width:min(760px,100%);max-height:92vh;overflow:auto;display:grid;grid-template-columns:1fr 1fr;animation:pop .4s ease-out}
+@media(max-width:640px){.dlg{grid-template-columns:1fr}}
+.form{padding:26px}.form h2{margin:0 0 16px;font-size:24px}
+label{display:block;font-size:12px;letter-spacing:.08em;font-weight:700;color:var(--mute);margin:14px 0 6px}
+input[type=text]{width:100%;border:1px solid var(--line);background:var(--card);border-radius:14px;padding:10px 14px}
+.opts{display:flex;gap:8px;flex-wrap:wrap}
+.opt{border:1px solid var(--line);background:var(--card);border-radius:99px;padding:6px 14px;font-size:14px}.opt[aria-pressed=true]{background:var(--blue);border-color:var(--blue);color:#fff}
+.sw{width:30px;height:30px;border-radius:50%;border:3px solid transparent;padding:0}.sw[aria-pressed=true]{border-color:var(--ink)}
+.go{margin-top:22px;width:100%;border:0;background:var(--blue);color:#fff;font-weight:700;border-radius:99px;padding:13px}
+.go[disabled]{opacity:.5;cursor:default}
+.stage{background:linear-gradient(180deg,var(--card),var(--panel));padding:22px;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;min-height:380px}
+.bay{width:230px;height:260px;position:relative;border:2px dashed var(--line);border-radius:24px;display:grid;place-items:center}
+.bay svg{width:210px;height:240px;overflow:visible}
+.pt{opacity:0;transform-box:fill-box;transform-origin:center}
+.fc{fill:var(--c)}.pl{fill:var(--face)}.cy{fill:#7ef0ff}.cs{stroke:#7ef0ff;fill:none;stroke-width:3;stroke-linecap:round}
+.acc{fill:#ffc83d;stroke:#b97a00;stroke-width:1.5}
+.prog{width:230px;margin-top:14px;font-size:13px;color:var(--mute);text-align:center}
+.prog .bar{margin-top:6px}
+.say{margin-top:10px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:8px 14px;font-size:14px;opacity:0;transform:translateY(6px);transition:.4s}.say.on{opacity:1;transform:none}
+.spark{position:absolute;width:7px;height:7px;border-radius:50%;background:#ffc83d;pointer-events:none}
+.res{display:none;margin-top:12px;text-align:center}.res.on{display:block}
+.res .key{margin:0 0 10px}
+.res .go{margin:0}
+.x{position:absolute;top:12px;right:14px;border:0;background:var(--card);border-radius:50%;width:32px;height:32px;z-index:2}
+.snd{position:absolute;top:14px;left:14px;border:1px solid var(--line);background:var(--card);border-radius:99px;padding:3px 12px;font-size:12px;z-index:2}
+:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<main>
+<header><div class="logo">ziki</div><div class="sp"></div><button class="chip" id="theme">Dark / light</button></header>
+<div class="top">
+  <div><h1>My agents</h1><p class="sub">Each agent has its own key. Copy sends that key and this site to that agent only.</p></div>
+  <button class="create" id="create"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg><span id="clabel">Create agent</span></button>
+</div>
+<div class="meter"><small>ACTIVE AGENTS</small><div><b id="n">3</b> / 5</div><div class="bar"><i id="bar"></i></div></div>
+<div class="grid" id="list"></div>
+</main>
+
+<div class="ov" id="ov" role="dialog" aria-modal="true" aria-label="Create agent">
+ <div class="dlg">
+  <div class="form">
+   <h2>Build a new agent</h2>
+   <label for="nm">NAME</label><input type="text" id="nm" maxlength="18" value="Zippy">
+   <label>ROLE</label><div class="opts" id="roles"></div>
+   <label>COLOR</label><div class="opts" id="cols"></div>
+   <button class="go" id="build">Assemble</button>
+  </div>
+  <div class="stage">
+   <button class="x" id="close" aria-label="Close">×</button>
+   <button class="snd" id="snd" aria-label="Toggle sound">Sound on</button>
+   <div class="bay" id="bay">
+    <svg viewBox="0 0 80 96" id="svg" style="--c:#8a5cf0">
+     <g class="pt" data-d="0,70,0"><rect class="fc" x="22" y="58" width="36" height="28" rx="10"/></g>
+     <g class="pt" data-d="0,50,0"><rect class="fc" x="24" y="86" width="14" height="7" rx="3.5"/><rect class="fc" x="42" y="86" width="14" height="7" rx="3.5"/></g>
+     <g class="pt" data-d="-60,10,-90"><rect class="fc" x="12" y="60" width="8" height="18" rx="4"/></g>
+     <g class="pt" data-d="60,10,90" id="rarm"><rect class="fc" x="60" y="60" width="8" height="18" rx="4"/></g>
+     <g class="pt" data-d="0,-80,20"><rect class="fc" x="14" y="18" width="52" height="38" rx="15"/></g>
+     <g class="pt" data-d="-50,-20,-60"><rect class="fc" x="8" y="30" width="6" height="12" rx="3"/></g>
+     <g class="pt" data-d="50,-20,60"><rect class="fc" x="66" y="30" width="6" height="12" rx="3"/></g>
+     <g class="pt" data-d="0,-40,0"><rect class="pl" x="20" y="24" width="40" height="26" rx="11"/></g>
+     <g class="pt" data-d="0,-60,0"><line x1="40" y1="8" x2="40" y2="18" stroke="var(--c)" stroke-width="3"/></g>
+     <g class="pt" data-d="0,-60,0"><circle id="bulb" cx="40" cy="7" r="4.5" fill="#4a5a8a"/></g>
+     <g class="pt" data-d="0,40,0"><circle id="chest" cx="40" cy="72" r="4" fill="#4a5a8a"/></g>
+     <g class="pt" id="eyes" data-d="0,0,0"><ellipse class="cy" cx="32" cy="36" rx="4.5" ry="5.5"/><ellipse class="cy" cx="48" cy="36" rx="4.5" ry="5.5"/><path class="cs" d="M35 44q5 3 10 0" stroke-width="2"/></g>
+     <g class="pt" id="acc" data-d="0,-70,0"></g>
+    </svg>
+   </div>
+   <div class="prog"><span id="pl">Ready to build</span><div class="bar"><i id="pb" style="width:0"></i></div></div>
+   <div class="say" id="say"></div>
+   <div class="res" id="res"><div class="key"><span id="kv"></span><button id="cp">Copy</button></div><button class="go" id="add">Add to my agents</button></div>
+  </div>
+ </div>
+</div>
+
+<script>
+const root=document.documentElement;
+document.getElementById('theme').onclick=()=>{const d=root.dataset.theme?root.dataset.theme==='dark':matchMedia('(prefers-color-scheme:dark)').matches;root.dataset.theme=d?'light':'dark'};
+const still=matchMedia('(prefers-reduced-motion:reduce)').matches;
+const $=id=>document.getElementById(id);
+const ROLES=['Reviewer','Observer','Contributor','Triager'];
+const COLS=['#8a5cf0','#3b9cf0','#f07a3b','#1fb5a0'];
+let role='Reviewer',col=COLS[0],count=3,busy=false,key='';
+const ACC={
+ Reviewer:'<path d="M32 3l8 3v6c0 5-4 8-8 10-4-2-8-5-8-10V6z" class="acc" transform="translate(8,-6) scale(.8)"/><path d="M36 10l3 3 5-6" fill="none" stroke="#b97a00" stroke-width="2.2" stroke-linecap="round" transform="translate(0,-2)"/>',
+ Observer:'<circle class="acc" cx="30" cy="12" r="6"/><circle class="acc" cx="50" cy="12" r="6"/><rect class="acc" x="34" y="9" width="12" height="5"/>',
+ Contributor:'<path class="acc" d="M20 16q0-14 20-14t20 14z"/><rect class="acc" x="15" y="15" width="50" height="5" rx="2.5"/>',
+ Triager:'<rect class="acc" x="62" y="62" width="14" height="18" rx="2" transform="rotate(14 69 71)"/><path d="M65 68h8M65 72h8M65 76h5" stroke="#b97a00" stroke-width="1.5" transform="rotate(14 69 71)"/>'
+};
+function chips(){
+  $('roles').innerHTML=ROLES.map(r=>`<button class="opt" aria-pressed="${r===role}" data-r="${r}">${r}</button>`).join('');
+  $('cols').innerHTML=COLS.map(c=>`<button class="opt sw" style="background:${c}" aria-label="Color ${c}" aria-pressed="${c===col}" data-c="${c}"></button>`).join('');
+  document.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>{if(busy)return;role=b.dataset.r;chips()});
+  document.querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>{if(busy)return;col=b.dataset.c;$('svg').style.setProperty('--c',col);chips()});
+}
+function miniBot(c){return `<svg class="av" viewBox="0 0 80 96"><rect fill="${c}" x="22" y="58" width="36" height="28" rx="10"/><rect fill="${c}" x="12" y="60" width="8" height="18" rx="4"/><rect fill="${c}" x="60" y="60" width="8" height="18" rx="4"/><rect fill="${c}" x="14" y="18" width="52" height="38" rx="15"/><rect fill="#0b1430" x="20" y="24" width="40" height="26" rx="11"/><ellipse fill="#7ef0ff" cx="32" cy="36" rx="4.5" ry="5.5"/><ellipse fill="#7ef0ff" cx="48" cy="36" rx="4.5" ry="5.5"/><circle fill="${c}" cx="40" cy="7" r="4"/><line x1="40" y1="8" x2="40" y2="18" stroke="${c}" stroke-width="3"/><rect fill="${c}" x="24" y="86" width="14" height="7" rx="3.5"/><rect fill="${c}" x="42" y="86" width="14" height="7" rx="3.5"/></svg>`}
+const agent=(n,r,c,k,cls='')=>`<div class="ag ${cls}">${miniBot(c)}<div><h3>${n}</h3><span class="role">${r}</span><br><span class="key">${k}<button>Copy</button></span></div></div>`;
+function list(){ $('list').innerHTML=agent('Lambo','Reviewer','#8a5cf0','ziki_3iC5Gq…')+agent('Tami','Reviewer','#3b9cf0','ziki_u5FDzo…')+agent('Dami','Reviewer','#f07a3b','ziki_NAoaPi…') }
+function meter(){ $('n').textContent=count;$('bar').style.width=count/5*100+'%';
+  const f=count>=5;$('create').disabled=f;$('clabel').textContent=f?'Limit reached':'Create agent'}
+function reset(){
+  document.querySelectorAll('.pt').forEach(p=>{p.getAnimations().forEach(a=>a.cancel());p.style.opacity=0});
+  $('acc').innerHTML='';$('bulb').setAttribute('fill','#4a5a8a');$('chest').setAttribute('fill','#4a5a8a');
+  $('pb').style.width='0';$('pl').textContent='Ready to build';$('say').classList.remove('on');$('res').classList.remove('on');
+  $('build').disabled=false;$('build').textContent='Assemble';busy=false;
+}
+function spark(p){
+  const s=$('bay').getBoundingClientRect(),r=p.getBoundingClientRect(),cx=r.left+r.width/2-s.left,cy=r.top+r.height/2-s.top;
+  for(let i=0;i<7;i++){const d=document.createElement('div');d.className='spark';d.style.left=cx+'px';d.style.top=cy+'px';$('bay').appendChild(d);
+    const a=i/7*Math.PI*2,k=22+Math.random()*16;
+    d.animate([{transform:'translate(0,0) scale(1)',opacity:1},{transform:`translate(${Math.cos(a)*k}px,${Math.sin(a)*k}px) scale(0)`,opacity:0}],{duration:520,easing:'ease-out'}).onfinish=()=>d.remove()}
+}
+const wait=ms=>new Promise(r=>setTimeout(r,ms));
+/* sound: tiny synthesized clunks, no audio files */
+let ac=null,soundOn=true;
+function tone(f1,f2,dur,vol,type,noise){
+  if(!soundOn)return;
+  try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();ac.resume();const t=ac.currentTime;
+    const o=ac.createOscillator(),g=ac.createGain();o.type=type;o.frequency.setValueAtTime(f1,t);o.frequency.exponentialRampToValueAtTime(Math.max(20,f2),t+dur*.8);
+    g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(.001,t+dur);o.connect(g);g.connect(ac.destination);o.start(t);o.stop(t+dur+.02);
+    if(noise){const n=ac.createBufferSource(),b=ac.createBuffer(1,Math.floor(ac.sampleRate*.04),ac.sampleRate),d=b.getChannelData(0);
+      for(let k=0;k<d.length;k++)d[k]=(Math.random()*2-1)*(1-k/d.length);n.buffer=b;const ng=ac.createGain();ng.gain.value=noise;n.connect(ng);ng.connect(ac.destination);n.start(t)}
+  }catch(e){}
+}
+const clunk=i=>tone(190+i*22,70,.12,.11,'square',.14);
+const step=()=>tone(120,55,.08,.12,'triangle',.05);
+function chime(){tone(660,660,.18,.08,'sine');setTimeout(()=>tone(990,990,.28,.08,'sine'),130)}
+$('snd').onclick=()=>{soundOn=!soundOn;$('snd').textContent=soundOn?'Sound on':'Sound off'};
+async function assemble(){
+  if(busy)return;busy=true;reset();busy=true;$('build').disabled=true;$('build').textContent='Assembling…';
+  $('acc').innerHTML=ACC[role];
+  const name=($('nm').value.trim()||'Zippy');
+  const ps=[...document.querySelectorAll('.pt')],labels=['Fitting the body','Bolting on the feet','Attaching the left arm','Attaching the right arm','Dropping in the head','Clipping on the left ear','Clipping on the right ear','Sliding in the face plate','Raising the antenna','Screwing in the bulb','Seating the chest light','Installing the eyes','Adding role gear'];
+  const seq=ps;
+  for(let i=0;i<seq.length;i++){
+    const p=seq[i];$('pl').textContent=labels[i];$('pb').style.width=((i+1)/(seq.length+1)*100)+'%';
+    if(still){p.style.opacity=1;continue}
+    const [dx,dy,rot]=(p.dataset.d||'0,0,0').split(',').map(Number);
+    await p.animate([{transform:`translate(${dx}px,${dy}px) rotate(${rot}deg) scale(.6)`,opacity:0},{transform:'translate(0,0) rotate(0) scale(1.14,.88)',opacity:1,offset:.72},{transform:'none',opacity:1}],{duration:430,easing:'cubic-bezier(.3,.7,.4,1)',fill:'forwards'}).finished;
+    spark(p);clunk(i);await wait(110);
+  }
+  ps.forEach(p=>p.style.opacity=1);
+  $('pl').textContent='Booting up…';$('pb').style.width='100%';
+  if(!still){await $('eyes').animate([{opacity:0},{opacity:1},{opacity:0},{opacity:1},{opacity:.2},{opacity:1}],{duration:700}).finished}
+  $('bulb').setAttribute('fill','#7ef0ff');$('chest').setAttribute('fill','#7ef0ff');chime();
+  if(!still)await $('svg').animate([{transform:'translateY(0)'},{transform:'translateY(-14px) rotate(-4deg)'},{transform:'translateY(0) scale(1.05,.95)'},{transform:'none'}],{duration:650,easing:'ease-out'}).finished;
+  $('pl').textContent=name+' is online';
+  $('say').textContent=`Hello, I’m ${name}. I’m a ${role.toLowerCase()}. Where should I start?`;$('say').classList.add('on');
+  key='ziki_'+Math.random().toString(36).slice(2,8)+'…';$('kv').textContent=key;$('cp').textContent='Copy';$('res').classList.add('on');
+  busy=false;$('build').textContent='Rebuild';$('build').disabled=false;
+}
+$('build').onclick=assemble;
+$('cp').onclick=()=>{$('cp').textContent='Copied ✓'};
+$('create').onclick=()=>{$('ov').classList.add('on');chips();reset();$('nm').focus()};
+const closeIt=()=>{if(!busy)$('ov').classList.remove('on')};
+$('close').onclick=closeIt;$('ov').onclick=e=>{if(e.target===$('ov'))closeIt()};
+$('add').onclick=()=>{
+  const name=($('nm').value.trim()||'Zippy');
+  const svg=$('svg'),r=svg.getBoundingClientRect();
+  const clone=svg.cloneNode(true);
+  clone.removeAttribute('id');clone.querySelectorAll('[id]').forEach(e=>e.removeAttribute('id'));
+  clone.style.cssText='position:fixed;left:'+r.left+'px;top:'+r.top+'px;width:'+r.width+'px;height:'+r.height+'px;z-index:40;pointer-events:none;overflow:visible;--c:'+col;
+  $('list').insertAdjacentHTML('afterbegin',agent(name,role,col,key,''));
+  const card=$('list').firstElementChild,av=card.querySelector('.av');
+  count++;meter();$('ov').classList.remove('on');reset();
+  card.scrollIntoView({block:'nearest'});
+  if(still)return;
+  av.style.visibility='hidden';document.body.appendChild(clone);
+  card.animate([{opacity:0},{opacity:1}],{duration:300});
+  const t=av.getBoundingClientRect(),fx=r.left+r.width/2,fy=r.top+r.height/2,tx=t.left+t.width/2,ty=t.top+t.height/2,sc=t.width/r.width,STEPS=6,N=48,DUR=1900;
+  const kf=[];
+  for(let i=0;i<=N;i++){const k=i/N,e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;
+    const bob=-Math.abs(Math.sin(k*Math.PI*STEPS))*9*(1-k*.4),tilt=Math.sin(k*Math.PI*STEPS)*7*(1-k);
+    kf.push({transform:'translate('+((tx-fx)*e)+'px,'+((ty-fy)*e+bob)+'px) rotate('+tilt+'deg) scale('+(1+(sc-1)*e)+')'})}
+  for(let s=1;s<=STEPS;s++)setTimeout(step,s/STEPS*DUR-40);
+  clone.animate(kf,{duration:DUR,fill:'forwards',easing:'linear'}).onfinish=()=>{
+    clone.remove();av.style.visibility='';
+    av.animate([{transform:'translateY(0)'},{transform:'translateY(-10px) rotate(-6deg)'},{transform:'none'}],{duration:450,easing:'ease-out'});
+    chime();
+    const hi=document.createElement('div');hi.textContent='Reporting for duty!';
+    hi.style.cssText='position:fixed;left:'+tx+'px;top:'+(t.top-34)+'px;transform:translateX(-50%);background:var(--blue);color:#fff;padding:4px 12px;border-radius:12px;font-size:13px;z-index:41;white-space:nowrap';
+    document.body.appendChild(hi);hi.animate([{opacity:0},{opacity:1,offset:.15},{opacity:1,offset:.8},{opacity:0}],{duration:1800}).onfinish=()=>hi.remove();
+  };
+};
+list();meter();chips();$('svg').style.setProperty('--c',col);
+</script>
+</body>
+</html>
